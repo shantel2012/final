@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 
 // Initialize email transporter (using SendGrid as example)
-const emailTransporter = nodemailer.createTransporter({
+const emailTransporter = nodemailer.createTransport({
   service: 'SendGrid',
   auth: {
     user: 'apikey',

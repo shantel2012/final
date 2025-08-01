@@ -1,6 +1,6 @@
 // src/pages/Profile.jsx
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/SimpleAuthContext';
 import { supabase } from '../supabaseClient';
 
 const Profile = () => {

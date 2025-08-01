@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/SimpleAuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -8,32 +8,63 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // Basic validation
+    if (!email.trim()) {
+      setError("Email is required");
+      setLoading(false);
+      return;
+    }
 
-    setLoading(false);
+    if (!password.trim()) {
+      setError("Password is required");
+      setLoading(false);
+      return;
+    }
 
-    if (error) {
-      setError(error.message);
-    } else if (data?.user) {
-      // Get user role from metadata
-      const role = data.user.user_metadata?.role || "user"; // default to "user"
+    try {
+      const response = await fetch('http://localhost:4000/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-      if (role === "admin") {
-        navigate("/dashboard/admin");
-      } else if (role === "owner") {
-        navigate("/dashboard/owner");
-      } else {
-        navigate("/dashboard/user");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
       }
+
+      // Store tokens in localStorage
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Update auth context
+      await login(email, password);
+
+      // Navigate based on user role
+      const userRole = data.user.role;
+      if (userRole === 'admin') {
+        navigate("/admin-dashboard");
+      } else if (userRole === 'owner') {
+        navigate("/owner-dashboard");
+      } else {
+        navigate("/user-dashboard");
+      }
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -125,6 +156,24 @@ export default function Login() {
         >
           {loading ? "Logging in..." : "Log In"}
         </button>
+
+        <div style={{ textAlign: "center", marginTop: "1rem" }}>
+          <span>Don't have an account? </span>
+          <button
+            type="button"
+            onClick={() => navigate("/signup")}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#1e3c72",
+              textDecoration: "underline",
+              cursor: "pointer",
+              fontSize: "1rem",
+            }}
+          >
+            Sign up here
+          </button>
+        </div>
       </form>
     </div>
   );

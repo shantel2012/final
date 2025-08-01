@@ -62,11 +62,22 @@ app.post("/signup", async (req, res) => {
       .single();
 
     if (error) {
-      console.error('Supabase error:', error);
-      return res.status(500).json({ error: "Failed to create user" });
+      console.error('Supabase error details:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      console.error('Error details:', error.details);
+      return res.status(500).json({ 
+        error: "Failed to create user", 
+        details: error.message,
+        code: error.code 
+      });
     }
 
-    res.json({ message: "User registered successfully", user: { id: data.id, name: data.name, email: data.email } });
+    res.json({ 
+      message: "User registered successfully", 
+      user: { id: data.id, name: data.name, email: data.email, role: data.role },
+      success: true 
+    });
   } catch (err) {
     console.error("Signup error:", err);
     res.status(500).json({ error: "Internal server error" });
@@ -89,19 +100,20 @@ app.post("/login", async (req, res) => {
       .single();
 
     if (error || !user) {
+      console.error('Login error details:', error);
       return res.status(400).json({ error: "Invalid email or password" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: "Invalid email or password" });
 
-    const accessToken = jwt.sign({ email: user.email, id: user.id }, JWT_SECRET, { expiresIn: "15m" });
-    const refreshToken = jwt.sign({ email: user.email, id: user.id }, JWT_SECRET, { expiresIn: "7d" });
+    const accessToken = jwt.sign({ email: user.email, id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "15m" });
+    const refreshToken = jwt.sign({ email: user.email, id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
 
     res.json({ 
       accessToken, 
       refreshToken, 
-      user: { id: user.id, name: user.name, email: user.email } 
+      user: { id: user.id, name: user.name, email: user.email, role: user.role } 
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -130,6 +142,7 @@ app.get("/parking-lots", authenticateToken, addUserRole, async (req, res) => {
     const { data: parkingLots, error } = await supabase
       .from('parking_lots')
       .select('*')
+      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -140,6 +153,29 @@ app.get("/parking-lots", authenticateToken, addUserRole, async (req, res) => {
     res.json(parkingLots);
   } catch (err) {
     console.error("Parking lots error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET SINGLE PARKING LOT (protected)
+app.get("/parking-lots/:id", authenticateToken, addUserRole, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const { data: parkingLot, error } = await supabase
+      .from('parking_lots')
+      .select('*')
+      .eq('id', id)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !parkingLot) {
+      return res.status(404).json({ error: "Parking lot not found" });
+    }
+
+    res.json(parkingLot);
+  } catch (err) {
+    console.error("Get parking lot error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -1,13 +1,12 @@
 // src/pages/Signup.jsx
 import React, { useState } from "react";
-import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState("user"); // default role
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -23,22 +22,46 @@ export default function Signup() {
       return;
     }
 
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { role }, // store role in user_metadata
-      },
-    });
-    setLoading(false);
+    if (!name.trim()) {
+      setError("Name is required");
+      return;
+    }
 
-    if (error) {
-      setError(error.message);
-    } else {
-      setSuccess("Signup successful! Please check your email to confirm.");
-      // Optional: Redirect after a short delay
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:4000/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Signup failed');
+      }
+
+      setSuccess("Signup successful! You can now log in.");
+      // Redirect after a short delay
       setTimeout(() => navigate("/login"), 1500);
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -68,6 +91,22 @@ export default function Signup() {
         }}
       >
         <h2 style={{ textAlign: "center", color: "#1e3c72" }}>Sign Up</h2>
+
+        <label htmlFor="name">Full Name</label>
+        <input
+          id="name"
+          type="text"
+          placeholder="Your full name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          style={{
+            padding: "0.6rem",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+            fontSize: "1rem",
+          }}
+        />
 
         <label htmlFor="email">Email</label>
         <input
@@ -117,23 +156,7 @@ export default function Signup() {
           }}
         />
 
-        <label htmlFor="role">Select Role</label>
-        <select
-          id="role"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          style={{
-            padding: "0.6rem",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            fontSize: "1rem",
-            backgroundColor: "#fff",
-          }}
-        >
-          <option value="user">User</option>
-          <option value="owner">Owner</option>
-          <option value="admin">Admin</option>
-        </select>
+
 
         {error && (
           <div
@@ -178,6 +201,24 @@ export default function Signup() {
         >
           {loading ? "Signing up..." : "Sign Up"}
         </button>
+
+        <div style={{ textAlign: "center", marginTop: "1rem" }}>
+          <span>Already have an account? </span>
+          <button
+            type="button"
+            onClick={() => navigate("/login")}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#1e3c72",
+              textDecoration: "underline",
+              cursor: "pointer",
+              fontSize: "1rem",
+            }}
+          >
+            Log in here
+          </button>
+        </div>
       </form>
     </div>
   );

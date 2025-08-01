@@ -11,34 +11,42 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setError('You must be logged in to view parking spaces.');
-      setLoading(false);
-      return;
-    }
-
-    fetch('http://localhost:4000/parking-lots', {
-      headers: {
-        Authorization: `Bearer ${token}`,  // Send token here
+    // For landing page, show sample data without requiring authentication
+    const sampleSpaces = [
+      {
+        id: 1,
+        name: 'Harare CBD Central Parking',
+        location: 'First Street, Harare CBD',
+        price_per_hour: 5.00,
+        available_spaces: 120,
+        total_spaces: 150,
+        rating: 4.5
       },
-    })
-      .then((res) => {
-        if (!res.ok) {
-          if(res.status === 401) throw new Error('Unauthorized. Please log in.');
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setFeaturedSpaces(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('Error fetching parking lots:', error);
-        setError(error.message || 'Failed to load parking lots');
-        setLoading(false);
-      });
+      {
+        id: 2,
+        name: 'Eastgate Mall Parking',
+        location: 'Eastgate Shopping Centre, Harare',
+        price_per_hour: 2.50,
+        available_spaces: 150,
+        total_spaces: 200,
+        rating: 4.8
+      },
+      {
+        id: 3,
+        name: 'Sam Levy Village',
+        location: 'Borrowdale, Harare',
+        price_per_hour: 3.00,
+        available_spaces: 80,
+        total_spaces: 150,
+        rating: 4.7
+      }
+    ];
+    
+    // Simulate loading delay
+    setTimeout(() => {
+      setFeaturedSpaces(sampleSpaces);
+      setLoading(false);
+    }, 500);
   }, []);
 
   const handleSearch = (e) => {

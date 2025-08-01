@@ -167,3 +167,4 @@ COMMENT ON FUNCTION get_popular_parking_lots IS 'Get most popular (favorited) pa
 -- Success message
 SELECT 'User favorites system created successfully!' as status,
        'Users can now favorite parking lots for quick access' as note;
+
